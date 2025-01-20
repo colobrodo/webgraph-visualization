@@ -52,6 +52,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut node_labels = Vec::new();
     let mut edges = Vec::new();
     let mut colors = vec![green];
+    seen.insert(args.start_node);
     nodes.push_back(args.start_node);
     node_labels.push(args.start_node.to_string());
     while !nodes.is_empty() && depth < args.max_depth {
@@ -61,19 +62,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let level_size = nodes.len();
         for _ in 0..level_size {
+            // nodes are appended to the queue once
             let node = nodes.pop_front().unwrap();
-            if seen.contains(&node) {
-                continue;
-            }
-            seen.insert(node);
             let src_label = node.to_string();
             for successor in graph.successors(node) {
                 let label = successor.to_string();
+                edges.push((src_label.clone(), label.clone()));
                 if !seen.contains(&successor) {
                     nodes.push_back(successor);
-                    node_labels.push(label.clone());
-                    edges.push((src_label.clone(), label));
+                    node_labels.push(label);
                     colors.push(level_color);
+                    seen.insert(successor);
                 }
             }
         }
