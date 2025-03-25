@@ -32,6 +32,10 @@ struct Args {
     /// The maximum visit depth
     #[arg(long, default_value = "false")]
     with_labels: bool,
+    /// If true it doesn't show the direction of the edges.
+    /// This allow to obtain a cleaner visualization without the arrows' pointer.
+    #[arg(short = 'u', long, default_value = "false")]
+    show_undirected: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -84,18 +88,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (rec, _serve_guard) = args.rerun.init("webgraph_visualize")?;
 
-    let mut graph_nodes =
-        rerun::GraphNodes::new(node_labels.iter().map(|s| s.to_owned())).with_colors(colors);
+    let mut graph_nodes = rerun::GraphNodes::new(node_labels.iter().map(|s| s.to_owned()))
+        .with_colors(colors)
+        .with_show_labels(false);
     if args.with_labels {
-        graph_nodes = graph_nodes.with_labels(node_labels.iter().map(|s| s.to_owned()));
+        graph_nodes = graph_nodes
+            .with_show_labels(true)
+            .with_labels(node_labels.iter().map(|s| s.to_owned()));
     }
-    rec.log(
-        "graph",
-        &[
-            &graph_nodes as &dyn rerun::AsComponents,
-            &rerun::GraphEdges::new(edges_iter).with_directed_edges(),
-        ],
-    )?;
+    let edges = if args.show_undirected {
+        rerun::GraphEdges::new(edges_iter).with_undirected_edges()
+    } else {
+        rerun::GraphEdges::new(edges_iter).with_directed_edges()
+    };
+    rec.log("graph", &[&graph_nodes as &dyn rerun::AsComponents, &edges])?;
 
     Ok(())
 }
